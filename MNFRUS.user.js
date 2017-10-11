@@ -11,19 +11,13 @@
 // ================== CONFIG ==================
 
 // Add names you want to filter
-var filterList = ["Like this", "or this", "PT"];
+var filterList = ["Like this", "or this"];
 
 // Set to true if you want to hide the delete counter
 var hideFilterCount = false;
 
 // Set to true if you want posts to be completely invisible
 var invisibleDelete = false;
-
-// Set to false to disable chain filtering
-// var chainFiltering = true;
-
-// Set to true to enable regex filtering
-// var enableRegex = false
 
 // ================== MEMBERS ================== 
 
