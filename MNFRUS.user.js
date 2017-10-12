@@ -22,6 +22,9 @@ var invisibleDelete = false;
 // Set to false to disable chain filtering (removes every reply in the chain)
 var chainFiltering = true;
 
+// Set to true to enable regex filtering
+// var enableRegex = false
+
 // ================== MEMBERS ================== 
 
 var deletedPostCount = 0;
@@ -89,7 +92,11 @@ function getPostName(post) {
 }
 
 function getReplies(post) {
-  var backlinks = Array.prototype.slice.call(post.childNodes[post.childNodes.length - 1].getElementsByClassName("post-link"));
+  //var backlinks = Array.prototype.slice.call(post.childNodes[post.childNodes.length - 1].getElementsByClassName("post-link"));
+  var backLinkSpan = post.getElementsByClassName("backlinks");
+  if (backLinkSpan == null || backLinkSpan.length == 0)
+    return [];
+  var backlinks = Array.prototype.slice.call(backLinkSpan[0].getElementsByClassName("post-link"));
   
   // Replace backlink elements with real posts
   for (var i = 0; i < backlinks.length; i++) {
