@@ -19,7 +19,7 @@ var hideFilterCount = false;
 // Set to true if you want posts to be completely invisible
 var invisibleDelete = false;
 
-// Set to false to disable chain filtering (removes every reply in the chain)
+// Set to false to disable chain filtering
 var chainFiltering = true;
 
 // Set to true to enable regex filtering
@@ -38,52 +38,64 @@ var REMOVED = " mnfrus_filtered";
 function postCreationHandler(mutationRecords) {
   mutationRecords.forEach(function(mutation) {
     for (var post of mutation.addedNodes) {
-      removePost(post, null);
+      checkForRemoval(post);
     }
   });
 }
 
 // Checks if a post needs to be removed and removes it.
 // If chainfiltering is on, recurses through replies.
-function removePost(post, parent) {
+function checkForRemoval(post) {
   // Abort if already filtered or not a post
-  if (post == null || post.className.includes(REMOVED))
-    return
+  if (post == null || isFiltered(post))
+    return;
+  
+  // Check posts this post replies to
+  // If every one is filtered, filter this one too
+  var parents = getParents(post);
+  if (chainFiltering && parents.length > 0) {
+    var shitpost = true;
+    for (var p of parents) {
+      if (!isFiltered(p)) {
+        shitpost = false;
+        break;
+      }
+    }
+    if (shitpost) {
+      removePost(post);
+      return;
+    }
+  }
   
   // get Name
   var postName = getPostName(post);
   
   // Go through list of filters, remove and break on match
   for (var filterName of filterList) {
-    if (filterName == postName || (chainFiltering && parent != null && parent.className.includes(REMOVED))) {
-      if (invisibleDelete) {
-        var oldAttr = post.getAttribute("style");
-        if (oldAttr == null)
-          oldAttr = "";
-        post.setAttribute("style", oldAttr + "display: none;");
-      } else {
-        if (!post.className.includes("deleted"))
-          post.className += " deleted";
-      }
-      
-      // Mark as custom filtered class for convenience
-      post.className += REMOVED;
-      
-      // Increase and update filter count
-      deletedPostCount++;
-      updateRemovedCounter();
-      
-      // Recurse through replies if chain filtering
-      if (chainFiltering) {
-        var replies = getReplies(post);
-        for (var reply of replies)
-          removePost(reply, post);
-      }
-      
-      // No need to check for other
+    if (filterName == postName) {
+      removePost(post);
       break;
     }
   }
+}
+
+function removePost(post)  {
+  if (invisibleDelete) {
+    var oldAttr = post.getAttribute("style");
+    if (oldAttr == null)
+      oldAttr = "";
+    post.setAttribute("style", oldAttr + "display: none;");
+  } else {
+    if (!post.className.includes("deleted"))
+      post.className += " deleted";
+  }
+  
+  // Mark as custom filtered class for convenience
+  post.className += REMOVED;
+     
+  // Increase and update filter count
+  deletedPostCount++;
+  updateRemovedCounter();
 }
 
 function getPostName(post) {
@@ -100,10 +112,31 @@ function getReplies(post) {
   
   // Replace backlink elements with real posts
   for (var i = 0; i < backlinks.length; i++) {
-    backlinks[i] = document.getElementById("p" + backlinks[i].getAttribute("data-id"));
+    backlinks[i] = getPostWithID(backlinks[i].getAttribute("data-id"))
   }
   
   return backlinks;
+}
+
+function getParents(post) {
+  var postContainer = post.getElementsByClassName("post-container")[0];
+  var parents = Array.prototype.slice.call(postContainer.getElementsByClassName("post-link"));
+  
+  for (var i = 0; i < parents.length; i++) {
+    parents[i] = getPostWithID(parents[i].getAttribute("data-id"));
+  }
+  return parents;
+}
+
+function getPostWithID(id) {
+  return document.getElementById("p" + id);
+}
+
+function isFiltered(post) {
+  // Might be null if not shown (eg when only showing last 100 posts)
+  if (post == null)
+    return false;
+  return post.className.includes(REMOVED);
 }
 
 function createRemovedCounter() {
@@ -135,4 +168,4 @@ newPostObserver.observe(threadContainer, obsConfig);
 var oldPosts = Array.prototype.slice.call(threadContainer.getElementsByTagName('article'));
 opPost = oldPosts.shift(); // Ignore OP
 for (var post of oldPosts)
-  removePost(post, null);
+  checkForRemoval(post);
