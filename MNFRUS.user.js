@@ -43,7 +43,7 @@ function postCreationHandler(mutationRecords) {
           newPostObserver.observe(post, obsAttrConfig);
         }
       }
-    } else if (mutation.type = "attributes") {
+    } else if (mutation.type == "attributes") {
       checkForRemovalByReplies(mutation.target);
     }
   });
