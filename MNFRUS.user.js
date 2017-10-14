@@ -3,7 +3,7 @@
 // @namespace   gucaguca
 // @description Meguca NameFag Removal UserScript
 // @include     https://meguca.org/*
-// @version     1.1
+// @version     1.2
 // @grant       none
 // @run-at      document-end
 // ==/UserScript==
@@ -22,9 +22,6 @@ var invisibleDelete = false;
 // Set to false to disable chain filtering
 var chainFiltering = true;
 
-// Set to true to enable regex filtering
-// var enableRegex = false
-
 // ================== MEMBERS ================== 
 
 var deletedPostCount = 0;
@@ -32,28 +29,56 @@ var removedCountElement;
 var threadContainer = document.getElementById("thread-container");
 var opPost;
 var REMOVED = " mnfrus_filtered";
+var newPostObserver = null;
+var obsAttrConfig = { attributes: true, attributFilter: [ "class" ]};
 
 // ================== FUNCTIONS ==================
 
 function postCreationHandler(mutationRecords) {
   mutationRecords.forEach(function(mutation) {
-    for (var post of mutation.addedNodes) {
-      checkForRemoval(post);
+    if (mutation.type == "childList") {
+      for (var post of mutation.addedNodes) {
+        checkForRemovalByName(post);
+        if (!isFiltered(post) && post.className.includes("editing")) {
+          newPostObserver.observe(post, obsAttrConfig);
+        }
+      }
+    } else if (mutation.type = "attributes") {
+      checkForRemovalByReplies(mutation.target);
     }
   });
 }
 
+function checkForRemoval(post) {
+  checkForRemovalByName(post);
+  checkForRemovalByReplies(post);
+}
+
 // Checks if a post needs to be removed and removes it.
 // If chainfiltering is on, recurses through replies.
-function checkForRemoval(post) {
+function checkForRemovalByName(post) {
   // Abort if already filtered or not a post
   if (post == null || isFiltered(post))
     return;
   
-  // Check posts this post replies to
-  // If every one is filtered, filter this one too
+  // get Name
+  var postName = getPostName(post);
+  
+  // Go through list of filters, remove and break on match
+  for (var filterName of filterList) {
+    if (filterName == postName) {
+      removePost(post);
+      break;
+    }
+  }
+}
+
+function checkForRemovalByReplies(post) {
+  if (post == null || isFiltered(post))
+    return;
+  
   var parents = getParents(post);
-  if (chainFiltering && parents.length > 0) {
+  if (parents.length > 0) {
     var shitpost = true;
     for (var p of parents) {
       if (!isFiltered(p)) {
@@ -64,17 +89,6 @@ function checkForRemoval(post) {
     if (shitpost) {
       removePost(post);
       return;
-    }
-  }
-  
-  // get Name
-  var postName = getPostName(post);
-  
-  // Go through list of filters, remove and break on match
-  for (var filterName of filterList) {
-    if (filterName == postName) {
-      removePost(post);
-      break;
     }
   }
 }
@@ -154,7 +168,7 @@ function updateRemovedCounter() {
 
 // ================== SCRIPT ==================
 
-var newPostObserver   = new MutationObserver(postCreationHandler);
+newPostObserver   = new MutationObserver(postCreationHandler);
 var obsConfig         = { childList: true };
 
 // Create Filtered Counter on top
