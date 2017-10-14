@@ -30,7 +30,7 @@ var threadContainer = document.getElementById("thread-container");
 var opPost;
 var REMOVED = " mnfrus_filtered";
 var newPostObserver = null;
-var obsAttrConfig = { attributes: true, attributFilter: [ "class" ]};
+var obsAttrConfig = { attributes: true, attributeFilter: [ "class" ]};
 
 // ================== FUNCTIONS ==================
 
