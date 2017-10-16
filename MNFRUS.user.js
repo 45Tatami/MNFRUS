@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name				MNFRUS
-// @namespace		gucaguca
+// @name		MNFRUS
+// @namespace	gucaguca
 // @description Meguca NameFag Removal UserScript
-// @include			https://meguca.org/*
-// @version			1.2
-// @grant			none 
-// @run-at			document-end
+// @include		https://meguca.org/*
+// @version		1.2
+// @grant		none 
+// @run-at		document-end
 // ==/UserScript==
 
 // ================== CONFIG ==================
@@ -39,7 +39,7 @@ function postCreationHandler(mutationRecords) {
 			for (let p of mutation.addedNodes) {
 				let post = getPostFromDOMObject(p);
 				checkForRemovalByName(post);
-				if (!isFiltered(post) && post.editing) {
+				if (chainFiltering && !isFiltered(post) && post.editing) {
 					newPostObserver.observe(p, obsAttrConfig);
 				}
 			}
@@ -84,7 +84,7 @@ function checkForRemovalByReplies(post) {
 			if (p[1] == post.op)
 				parent = postList.get(p[0]);
 			else
-			parent = postList.getFromAll(p[0]);
+				parent = postList.getFromAll(p[0]);
 			if (!isFiltered(parent)) {
 				shitpost = false;
 				break;
@@ -158,8 +158,10 @@ var finLoadingHandler = function(e) {
 	for (let post of postList) {
 		checkForRemovalByName(post);
 	}
-	for (let post of postList) {
-		checkForRemovalByReplies(post);
+	if (chainFiltering) {		
+		for (let post of postList) {
+			checkForRemovalByReplies(post);
+		}
 	}
 	
 	// Using DOM to get notified on new posts; Can't find a good way to use the Meguca API
