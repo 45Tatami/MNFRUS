@@ -22,6 +22,9 @@ var invisibleDelete =  false;
 // Set to false to disable chain filtering
 var chainFiltering = true;
 
+// Tries to fix e.g. "@" or ">" in replies
+var fixDeniedReplies = true;
+
 // ================== MEMBERS ================== 
 
 var deletedPostCount = 0;
@@ -30,6 +33,7 @@ var threadContainer = document.getElementById("thread-container");
 var newPostObserver = null;
 var obsAttrConfig = { attributes: true, attributeFilter: [ "class" ]};
 var postList;
+var regExps;
 
 // ================== FUNCTIONS ==================
 
@@ -44,7 +48,10 @@ function postCreationHandler(mutationRecords) {
 				}
 			}
 		} else if (mutation.type == "attributes") {
-			checkForRemovalByReplies(getPostFromDOMObject(mutation.target));
+			let post = getPostFromDOMObject(mutation.target);
+			if (fixDeniedReplies)
+				repairReply(post);
+			checkForRemovalByReplies(post);
 		}
 	});
 }
@@ -97,8 +104,9 @@ function checkForRemovalByReplies(post) {
 }
 
 function removePost(post)  {
+	console.log("Here");
 	if (invisibleDelete) {
-		post.remove()
+		post.hide()
 	} else {
 		post.setDeleted();
 	}
@@ -123,12 +131,42 @@ function getPostFromDOMObject(p) {
 
 function isFiltered(post) {
 	if (post == null)
-		return invisibleDelete;
+		return false;
 
 	if (invisibleDelete)
-		return !postList.has(post.id);
+		return post.hidden;
 	else
 		return post.deleted;
+}
+
+function repairReply(post) {
+	if (regExps == null) {
+		let digits = post.id.toString().length
+		let regID = '(?:[0-9]{7})(?![0-9])';
+		regExps = [
+			new RegExp('^>' + regID, 'gm'),
+			new RegExp('^@' + regID, 'gm'),
+			new RegExp('^'  + regID, 'gm')
+		]
+	}
+	
+	let text = post.body;
+
+	for (let reg of regExps) {
+		let replies = text.match(reg);
+//		if (replies != null)
+//			console.log("Found reply with reg: " + reg.toString() + "\n" + replies + " in \"" + text + "\"\n");
+		if (replies != null) {
+			for (let reply of replies) {
+				let id  = reply.substring(reply.search(/[0-9]/));
+
+				console.log("Replacing \"" + reply + "\" with \">>" + id + "\" on post " + post.id);
+				post.body.replace(reply, ">>" + id);
+				post.view.reparseBody();
+				post.propagateLinks();
+			}
+		}
+	}
 }
 
 function createRemovedCounter() {
@@ -157,6 +195,8 @@ var finLoadingHandler = function(e) {
 	postList = window.require("state").posts;
 	for (let post of postList) {
 		checkForRemovalByName(post);
+		if (fixDeniedReplies)
+			repairReply(post);
 	}
 	if (chainFiltering) {		
 		for (let post of postList) {
