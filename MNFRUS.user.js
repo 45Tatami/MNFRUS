@@ -22,8 +22,11 @@ var invisibleDelete =  false;
 // Set to false to disable chain filtering
 var chainFiltering = true;
 
-// Tries to fix e.g. "@" or ">" in replies
+// Tries to fix e.g. "@" or ">" in replies (not tested)
 var fixDeniedReplies = true;
+
+// Marks links to deleted posts with a strikethrough
+var markDeletedPostLinks = true;
 
 // ================== MEMBERS ================== 
 
@@ -34,6 +37,8 @@ var newPostObserver = null;
 var obsAttrConfig = { attributes: true, attributeFilter: [ "class" ]};
 var postList;
 var regExps;
+var postLinks = threadContainer.getElementsByClassName("post-link");
+var linkColor;
 
 // ================== FUNCTIONS ==================
 
@@ -104,11 +109,25 @@ function checkForRemovalByReplies(post) {
 }
 
 function removePost(post)  {
-	console.log("Here");
 	if (invisibleDelete) {
 		post.hide()
 	} else {
 		post.setDeleted();
+	}
+
+	if (markDeletedPostLinks) {
+		let id = post.id;
+		for (let postLink of postLinks) {
+			if (postLink.getAttribute("data-id") == id) {
+				// This is incredible ugly but normal strikethrough gets overriden by css and the element doesn't contain the color
+				let strike = document.createElement('s');
+				if (linkColor == null)
+					linkColor = window.getComputedStyle(postLink, null).getPropertyValue("color");
+				strike.style.color = linkColor;
+				postLink.parentNode.insertBefore(strike, postLink);
+				strike.appendChild(postLink);
+			}
+		}
 	}
 	
 	// Increase and update filter count
