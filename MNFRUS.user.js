@@ -22,7 +22,7 @@ var invisibleDelete =  false;
 // Set to false to disable chain filtering
 var chainFiltering = true;
 
-// Tries to fix e.g. "@" or ">" in replies (not tested)
+// Tries to fix e.g. "@" or ">" in replies (If your browser hangs, disable this)
 var fixDeniedReplies = true;
 
 // Marks links to deleted posts with a strikethrough
@@ -165,7 +165,7 @@ function repairReply(post) {
 	if (regExps == null) {
 		// TODO Wrong behaviour on threads with digit change
 		let digits = post.id.toString().length;
-		let regID = '([0-9]{1})(?![0-9])';
+		let regID = '([0-9]{' + digits + '})(?![0-9])';
 		regExps = [
 			new RegExp('^(>)' + regID, 'gm'),
 			new RegExp('^(@)' + regID, 'gm'),
@@ -178,16 +178,14 @@ function repairReply(post) {
 		let replies;
 		// Search post until none are found
 		while ((replies = reg.exec(post.body)) !== null) {
-			if (replies != null) {
-				post.editing = true;
-				post.body = post.body.replace(replies[0], ">>" + replies[2]);
-				if (post.links == null)
-					post.links = [];
-				post.links.push([replies[2], post.op]);
-				post.view.reparseBody();
-				post.propagateLinks();
-				post.editing = false;
-			}
+			post.editing = true;
+			post.body = post.body.replace(replies[0], ">>" + replies[2]);
+			if (post.links == null)
+				post.links = [];
+			post.links.push([replies[2], post.op]);
+			post.view.reparseBody();
+			post.propagateLinks();
+			post.editing = false;
 		}
 	}
 }
