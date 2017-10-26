@@ -175,17 +175,19 @@ function repairReply(post) {
 	
 	// Check for each each kind of regular expression defined beforehand
 	for (let reg of regExps) {
-		// TODO Only one is getting recognized
-		let replies = reg.exec(post.body);
-		if (replies != null) {
-			post.editing = true;
-			post.body = post.body.replace(replies[0], ">>" + replies[2]);
-			if (post.links == null)
-				post.links = [];
-			post.links.push([replies[2], post.op]);
-			post.view.reparseBody();
-			post.propagateLinks();
-			post.editing = false;
+		let replies;
+		// Search post until none are found
+		while ((replies = reg.exec(post.body)) !== null) {
+			if (replies != null) {
+				post.editing = true;
+				post.body = post.body.replace(replies[0], ">>" + replies[2]);
+				if (post.links == null)
+					post.links = [];
+				post.links.push([replies[2], post.op]);
+				post.view.reparseBody();
+				post.propagateLinks();
+				post.editing = false;
+			}
 		}
 	}
 }
