@@ -92,11 +92,8 @@ function checkForRemovalByReplies(post) {
 	if (parents.length > 0) {
 		let shitpost = true;
 		for (let p of parents) {
-			let parent;
-			if (p[1] == post.op)
-				parent = postList.get(p[0]);
-			else
-				parent = postList.getFromAll(p[0]);
+			// TODO replies outside of thread
+			let parent = postList.get(p[0]);
 			if (!isFiltered(parent)) {
 				shitpost = false;
 				break;
@@ -148,6 +145,10 @@ function getPostFromDOMObject(p) {
 	return postList.get(p.getAttribute('id').slice(1));
 }
 
+function getDOMObjectFromPost(post) {
+	return document.getElementById("p" + post.id);
+}
+
 function isFiltered(post) {
 	if (post == null)
 		return false;
@@ -159,31 +160,32 @@ function isFiltered(post) {
 }
 
 function repairReply(post) {
+	// TODO double backlink to some deleted posts
+	// Don't create new expressions for every post, create for the first and reuse
 	if (regExps == null) {
-		let digits = post.id.toString().length
-		let regID = '(?:[0-9]{7})(?![0-9])';
+		// TODO Wrong behaviour on threads with digit change
+		let digits = post.id.toString().length;
+		let regID = '([0-9]{1})(?![0-9])';
 		regExps = [
-			new RegExp('^>' + regID, 'gm'),
-			new RegExp('^@' + regID, 'gm'),
-			new RegExp('^'  + regID, 'gm')
-		]
+			new RegExp('^(>)' + regID, 'gm'),
+			new RegExp('^(@)' + regID, 'gm'),
+			new RegExp('^()'  + regID, 'gm')
+		];
 	}
 	
-	let text = post.body;
-
+	// Check for each each kind of regular expression defined beforehand
 	for (let reg of regExps) {
-		let replies = text.match(reg);
-//		if (replies != null)
-//			console.log("Found reply with reg: " + reg.toString() + "\n" + replies + " in \"" + text + "\"\n");
+		// TODO Only one is getting recognized
+		let replies = reg.exec(post.body);
 		if (replies != null) {
-			for (let reply of replies) {
-				let id  = reply.substring(reply.search(/[0-9]/));
-
-				console.log("Replacing \"" + reply + "\" with \">>" + id + "\" on post " + post.id);
-				post.body.replace(reply, ">>" + id);
-				post.view.reparseBody();
-				post.propagateLinks();
-			}
+			post.editing = true;
+			post.body = post.body.replace(replies[0], ">>" + replies[2]);
+			if (post.links == null)
+				post.links = [];
+			post.links.push([replies[2], post.op]);
+			post.view.reparseBody();
+			post.propagateLinks();
+			post.editing = false;
 		}
 	}
 }
@@ -214,8 +216,9 @@ var finLoadingHandler = function(e) {
 	postList = window.require("state").posts;
 	for (let post of postList) {
 		checkForRemovalByName(post);
-		if (fixDeniedReplies)
+		if (fixDeniedReplies) {
 			repairReply(post);
+		}
 	}
 	if (chainFiltering) {		
 		for (let post of postList) {
@@ -224,8 +227,9 @@ var finLoadingHandler = function(e) {
 	}
 	
 	// Using DOM to get notified on new posts; Can't find a good way to use the Meguca API
-	newPostObserver	= new MutationObserver(postCreationHandler);
+	newPostObserver = new MutationObserver(postCreationHandler);
 	newPostObserver.observe(threadContainer, { childList: true });
+	console.log("Init Done");
 };
 var finLoadingObserver = new MutationObserver(finLoadingHandler);
 finLoadingObserver.observe(document.getElementById('loading-image'), {attributes: true});
