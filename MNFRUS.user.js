@@ -1,4 +1,4 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name		MNFRUS
 // @namespace	gucaguca
 // @description Meguca NameFag Removal UserScript
@@ -10,8 +10,18 @@
 
 // ================== CONFIG ==================
 
+// ------------------ FILTER ------------------
+
 // Add names you want to filter
-var filterList = ["Like this", "or this"];
+var nameFilterList = ["Like this", "or this"];
+
+// Add trips you want to filter
+var tripFilterList = ["Like this", "or this"];
+
+// Add text you want to filter, just like the other filter lists
+var textFilterList = [];
+
+// ------------------ OTHER OPTIONS ------------------
 
 // Set to true if you want to hide the delete counter
 var hideFilterCount = false;
@@ -72,14 +82,35 @@ function checkForRemovalByName(post) {
 	if (isFiltered(post))
 		return;
 	
-	// get Name
-	var postName = post.name;
-	
-	// Go through list of filters, remove and break on match
-	for (var filterName of filterList) {
-		if (filterName == postName) {
+	// Names
+	let nameP = post.name;
+	if (nameP !== "Anonymous" && typeof nameP !== "undefined") {
+		console.log(nameP);
+		for (let name of nameFilterList) {
+			if (name === nameP) {
+				removePost(post);
+				return;
+			}
+		}
+	}
+
+	// Trips
+	let tripP = post.trip;
+	if (typeof tripP !== "undefined") { // this is fucking bullshit
+		for (let trip of tripFilterList) {
+			if (trip === tripP) {
+				removePost(post)
+				return;
+			}
+		}
+	}
+
+	// Text
+	let textP = post.body;
+	for (let text of textFilterList) {
+		if (textP.includes(text)) {
 			removePost(post);
-			break;
+			return;
 		}
 	}
 }
@@ -178,7 +209,7 @@ function repairReply(post) {
 		let replies;
 		// Search post until none are found
 		while ((replies = reg.exec(post.body)) !== null) {
-			post.body = post.body.replace(replies[0], ">>" + replies[2]);
+			post.body = post.body.replace(replies[0], ">>" + replies[2] + " (Fixed)");
 			if (post.links == null)
 				post.links = [];
 			post.links.push([replies[2], post.op]);
