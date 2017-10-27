@@ -33,7 +33,7 @@ var invisibleDelete =  false;
 var chainFiltering = true;
 
 // Tries to fix e.g. "@" or ">" in replies (If your browser hangs, disable this)
-var fixDeniedReplies = true;
+var fixDeniedReplies = false; // TODO Breaks # functions and inline links
 
 // Marks links to deleted posts with a strikethrough
 var markDeletedPostLinks = true;
