@@ -33,7 +33,8 @@ var invisibleDelete =  false;
 var chainFiltering = true;
 
 // Tries to fix e.g. "@" or ">" in replies (If your browser hangs, disable this)
-var fixDeniedReplies = false; // TODO Breaks # functions and inline links
+// Breaks hashtag commands on fixed posts
+var fixDeniedReplies = true;
 
 // Marks links to deleted posts with a strikethrough
 var markDeletedPostLinks = true;
@@ -44,7 +45,7 @@ var deletedPostCount = 0;
 var removedCountElement;
 var threadContainer = document.getElementById("thread-container");
 var newPostObserver = null;
-var obsAttrConfig = { attributes: true, attributeFilter: [ "class" ]};
+var obsAttrConfig = { attributes: true};
 var postList;
 var regExps;
 var postLinks = threadContainer.getElementsByClassName("post-link");
@@ -64,9 +65,12 @@ function postCreationHandler(mutationRecords) {
 			}
 		} else if (mutation.type == "attributes") {
 			let post = getPostFromDOMObject(mutation.target);
-			if (fixDeniedReplies)
+			if (!post.editing && fixDeniedReplies) {
 				repairReply(post);
+			}
 			checkForRemovalByReplies(post);
+		} else {
+			console.log("Unhandled mutation type " + mutation.type);
 		}
 	});
 }
@@ -85,9 +89,9 @@ function checkForRemovalByName(post) {
 	// Names
 	let nameP = post.name;
 	if (nameP !== "Anonymous" && typeof nameP !== "undefined") {
-		console.log(nameP);
 		for (let name of nameFilterList) {
 			if (name === nameP) {
+				console.log("Deleting post No. " + post.id + " because name");
 				removePost(post);
 				return;
 			}
@@ -99,6 +103,7 @@ function checkForRemovalByName(post) {
 	if (typeof tripP !== "undefined") { // this is fucking bullshit
 		for (let trip of tripFilterList) {
 			if (trip === tripP) {
+				console.log("Deleting post No. " + post.id + " because trip");
 				removePost(post)
 				return;
 			}
@@ -109,6 +114,7 @@ function checkForRemovalByName(post) {
 	let textP = post.body;
 	for (let text of textFilterList) {
 		if (textP.includes(text)) {
+			console.log("Deleting post No. " + post.id + " because name");
 			removePost(post);
 			return;
 		}
@@ -137,6 +143,7 @@ function checkForRemovalByReplies(post) {
 }
 
 function removePost(post)  {
+	console.log("Deleted: " + post.id);
 	if (invisibleDelete) {
 		post.hide()
 	} else {
@@ -205,6 +212,7 @@ function repairReply(post) {
 	}
 	
 	// Check for each each kind of regular expression defined beforehand
+	let changed = false;
 	for (let reg of regExps) {
 		let replies;
 		// Search post until none are found
@@ -213,9 +221,16 @@ function repairReply(post) {
 			if (post.links == null)
 				post.links = [];
 			post.links.push([replies[2], post.op]);
+			changed = true;
 		}
+	}
+
+	// Reparse post if we changed something
+	if (changed) {
 		post.editing = true;
-		post.view.reparseBody();
+		// Breaks # commands when editing, doesn't work when not editing
+		// TODO maybe create links manually
+		post.view.reparseBody(); 
 		post.propagateLinks();
 		post.editing = false;
 	}
