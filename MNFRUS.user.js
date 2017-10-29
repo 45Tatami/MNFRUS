@@ -217,7 +217,9 @@ function repairReply(post) {
 		let replies;
 		// Search post until none are found
 		while ((replies = reg.exec(post.body)) !== null) {
-			post.body = post.body.replace(replies[0], ">>" + replies[2] + " (Fixed)");
+			post.body = post.body.replace(reg, ">>" + replies[2] + " (Fixed)");
+			// Modify regex position after replacing
+			reg.lastIndex = reg.lastIndex + 2 - replies[1].length;
 			if (post.links == null)
 				post.links = [];
 			post.links.push([replies[2], post.op]);
