@@ -9,6 +9,7 @@ This is a WIP and might not work as expected.
    * Name
    * Trip
    * Text
+   * Hash
  * Recursive filtering
  * Repairing "broken" post links like "@1234" or ">1234"
 
