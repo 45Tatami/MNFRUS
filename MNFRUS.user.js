@@ -21,6 +21,9 @@ var tripFilterList = ["Like this", "or this"];
 // Add text you want to filter, just like the other filter lists
 var textFilterList = [];
 
+// Add SHA1 hashes (hex format) you want to filter.
+var fileFilterList = [];
+
 // ------------------ OTHER OPTIONS ------------------
 
 // Set to true if you want to hide the delete counter
@@ -115,6 +118,16 @@ function checkForRemovalByName(post) {
 	for (let text of textFilterList) {
 		if (textP.includes(text)) {
 			console.log("Deleting post No. " + post.id + " because name");
+			removePost(post);
+			return;
+		}
+	}
+
+	// Images
+	let hashP = post.Image.SHA1;
+	for (let hash of fileFilterList) {
+		if (hashP === hash) {
+			console.log("Deleting post No. " + post.id + " because hash");
 			removePost(post);
 			return;
 		}
